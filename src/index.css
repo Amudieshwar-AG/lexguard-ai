@@ -1,0 +1,201 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core backgrounds */
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Brand — indigo-blue */
+    --primary: 239 84% 62%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 217 91% 60%;
+
+    /* Sidebar */
+    --sidebar-bg: 222 47% 11%;
+    --sidebar-fg: 215 20% 75%;
+    --sidebar-active: 239 84% 62%;
+    --sidebar-active-fg: 0 0% 100%;
+    --sidebar-hover: 222 40% 18%;
+    --sidebar-border: 222 35% 18%;
+
+    /* Secondary / muted */
+    --secondary: 219 30% 92%;
+    --secondary-foreground: 222 47% 22%;
+
+    --muted: 220 20% 94%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 239 84% 96%;
+    --accent-foreground: 239 84% 40%;
+
+    /* Status */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-bg: 142 71% 95%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-bg: 38 92% 95%;
+
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 100%;
+    --danger-bg: 0 84% 96%;
+
+    --info: 217 91% 60%;
+    --info-bg: 217 91% 96%;
+
+    /* UI chrome */
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --ring: 239 84% 62%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --radius: 0.625rem;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px 0 hsl(239 84% 62% / 0.06), 0 1px 2px -1px hsl(222 47% 11% / 0.06);
+    --shadow-md: 0 4px 16px -4px hsl(239 84% 62% / 0.10), 0 2px 6px -2px hsl(222 47% 11% / 0.05);
+    --shadow-lg: 0 12px 36px -8px hsl(239 84% 62% / 0.16), 0 4px 12px -4px hsl(222 47% 11% / 0.08);
+
+    /* Gradients */
+    --gradient-brand: linear-gradient(135deg, hsl(239 84% 62%), hsl(217 91% 60%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 20% 98%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(222 47% 11%), hsl(222 42% 9%));
+
+    /* Sidebar shadcn compat */
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 215 20% 75%;
+    --sidebar-primary: 239 84% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 40% 18%;
+    --sidebar-accent-foreground: 215 20% 90%;
+    --sidebar-border: 222 35% 18%;
+    --sidebar-ring: 239 84% 62%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    font-feature-settings: "cv11", "salt";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Sora', 'Inter', sans-serif;
+    font-weight: 600;
+  }
+}
+
+@layer components {
+  .card-glass {
+    @apply bg-card rounded-xl border border-border;
+    box-shadow: var(--shadow-md);
+  }
+
+  .card-glass-hover {
+    @apply card-glass transition-all duration-200 hover:-translate-y-0.5;
+    box-shadow: var(--shadow-md);
+  }
+  .card-glass-hover:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer;
+    color: hsl(var(--sidebar-fg));
+  }
+  .sidebar-item:hover {
+    background: hsl(var(--sidebar-hover));
+    color: hsl(var(--sidebar-active-fg));
+  }
+  .sidebar-item.active {
+    background: hsl(var(--primary) / 0.15);
+    color: hsl(var(--primary));
+    border-left: 3px solid hsl(var(--primary));
+  }
+
+  .risk-badge-high {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background: hsl(var(--danger-bg));
+    color: hsl(var(--danger));
+  }
+  .risk-badge-medium {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background: hsl(var(--warning-bg));
+    color: hsl(var(--warning));
+  }
+  .risk-badge-low {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background: hsl(var(--success-bg));
+    color: hsl(var(--success));
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-all duration-150;
+    background: var(--gradient-brand);
+    box-shadow: 0 2px 8px hsl(var(--primary) / 0.35);
+  }
+  .btn-primary:hover {
+    opacity: 0.92;
+    box-shadow: 0 4px 16px hsl(var(--primary) / 0.45);
+    transform: translateY(-1px);
+  }
+
+  .stat-card {
+    @apply card-glass p-5 flex flex-col gap-1;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply rounded-full;
+    background: hsl(var(--border));
+  }
+
+  .upload-zone {
+    @apply border-2 border-dashed rounded-xl p-8 flex flex-col items-center gap-3 text-center transition-all duration-200 cursor-pointer;
+    border-color: hsl(var(--border));
+    background: hsl(var(--muted) / 0.4);
+  }
+  .upload-zone:hover, .upload-zone.dragging {
+    border-color: hsl(var(--primary));
+    background: hsl(var(--primary) / 0.04);
+  }
+
+  .chat-bubble-user {
+    @apply px-4 py-3 rounded-2xl rounded-br-sm text-sm leading-relaxed;
+    background: var(--gradient-brand);
+    color: hsl(0 0% 100%);
+    max-width: 85%;
+    align-self: flex-end;
+  }
+
+  .chat-bubble-ai {
+    @apply px-4 py-3 rounded-2xl rounded-bl-sm text-sm leading-relaxed bg-card border border-border;
+    color: hsl(var(--foreground));
+    max-width: 90%;
+    align-self: flex-start;
+  }
+}
