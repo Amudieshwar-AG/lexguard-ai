@@ -2,6 +2,8 @@ import { useState, useRef, useCallback } from "react";
 import { Upload, FileText, X, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDocuments } from "@/hooks/useDocuments";
+import { useRiskAnalysis } from "@/hooks/useRiskAnalysis";
+import { useToast } from "@/hooks/use-toast";
 
 type FileStatus = "processing" | "completed" | "error";
 
@@ -26,8 +28,11 @@ function StatusChip({ status }: { status: FileStatus }) {
 export function DocumentUpload() {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { documents, loading, uploadDocument, deleteDocument } = useDocuments();
+  const { triggerAnalysis } = useRiskAnalysis();
+  const { toast } = useToast();
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -38,10 +43,35 @@ export function DocumentUpload() {
 
   const addFiles = async (newFiles: File[]) => {
     setUploading(true);
+    setUploadError(null);
     for (const file of newFiles) {
-      await uploadDocument(file);
+      try {
+        const uploadedDoc = await uploadDocument(file);
+        toast({ title: "Upload successful", description: `${file.name} uploaded. AI analysis starting in background…` });
+        // Trigger analysis automatically (non-blocking)
+        triggerAnalysis(uploadedDoc).catch((err) => {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : typeof err === 'object' && err !== null && 'message' in err
+                ? String((err as { message: unknown }).message)
+                : JSON.stringify(err);
+          toast({ title: "Analysis failed", description: msg, variant: "destructive" });
+        });
+      } catch (err) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : typeof err === 'object' && err !== null && 'message' in err
+              ? String((err as { message: unknown }).message)
+              : JSON.stringify(err);
+        setUploadError(msg);
+        toast({ title: "Upload failed", description: msg, variant: "destructive" });
+      }
     }
     setUploading(false);
+    // Reset the file input so the same file can be re-selected after an error
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   const removeFile = async (id: string) => {
@@ -108,6 +138,20 @@ export function DocumentUpload() {
       </div>
       <input ref={inputRef} type="file" multiple accept=".pdf,.docx" className="hidden"
         onChange={(e) => addFiles(Array.from(e.target.files || []))} />
+
+      {/* Upload progress / error banner */}
+      {uploading && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+          <Clock size={13} className="animate-spin shrink-0" />
+          <span>Uploading, please wait…</span>
+        </div>
+      )}
+      {!uploading && uploadError && (
+        <div className="flex items-start gap-2 text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
+          <AlertCircle size={13} className="shrink-0 mt-0.5" />
+          <span><strong>Upload failed:</strong> {uploadError}</span>
+        </div>
+      )}
 
       {/* File list */}
       {loading ? (
