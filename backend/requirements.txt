@@ -1,0 +1,40 @@
+# =============================================================================
+# LexGuard AI - Python Dependencies
+# Install with: pip install -r requirements.txt
+# =============================================================================
+
+# --- Web Framework ---
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+python-multipart==0.0.9          # for file uploads
+pydantic==2.6.1
+
+# --- Google AI (Gemini) ---
+google-generativeai==0.3.2
+
+# --- Vector Store & Embeddings ---
+faiss-cpu==1.7.4                  # use faiss-gpu if you have CUDA
+numpy==1.26.4
+
+# --- Document Processing ---
+PyMuPDF==1.23.22                  # PDF extraction
+python-docx==1.1.0                # DOCX extraction
+
+# --- PDF Report Generation ---
+reportlab==4.0.9
+
+# --- Database (Supabase) ---
+supabase==2.3.4
+postgrest==0.13.2
+
+# --- Environment Variables ---
+python-dotenv==1.0.1
+
+# --- Utilities ---
+requests==2.31.0
+aiofiles==23.2.1
+
+# --- Testing (Optional) ---
+pytest==8.0.0
+pytest-asyncio==0.23.5
+httpx==0.25.2                     # for testing FastAPI endpoints (compatible with supabase)

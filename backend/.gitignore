@@ -1,0 +1,55 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# LexGuard AI Backend — .gitignore
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ─── Environment & Secrets ─────────────────────────────────────────────────
+.env
+.env.local
+*.key
+*.pem
+
+# ─── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# ─── IDE ───────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── Data & Uploads ────────────────────────────────────────────────────────
+data/uploaded_docs/*.pdf
+data/uploaded_docs/*.docx
+data/uploaded_docs/*.doc
+!data/uploaded_docs/.gitkeep
+
+# ─── Generated Reports ─────────────────────────────────────────────────────
+reports/generated_reports/*.pdf
+!reports/generated_reports/.gitkeep
+
+# ─── Vector Store (FAISS) ──────────────────────────────────────────────────
+vector_store/faiss_index/*.faiss
+vector_store/faiss_index/*.pkl
+!vector_store/faiss_index/.gitkeep
+
+# ─── Logs ──────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Testing ───────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ─── OS ────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

@@ -44,13 +44,6 @@ const Index = () => {
               )}
             </div>
           </main>
-
-          {/* Right chatbot panel - always visible on dashboard */}
-          {activeSection !== "chat" && (
-            <aside className="hidden xl:flex flex-col w-80 shrink-0 border-l border-border p-4 overflow-hidden">
-              <ChatBot />
-            </aside>
-          )}
         </div>
       </div>
     </div>

@@ -1,5 +1,4 @@
 import { Bell, Search, LogOut } from "lucide-react";
-import TechShieldLogo from "@/components/TechShieldLogo";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -30,7 +29,7 @@ export function TopNav({ activeSection }: TopNavProps) {
       style={{ boxShadow: "var(--shadow-sm)" }}>
       {/* Left: logo + title */}
       <div className="flex items-center gap-3">
-        <TechShieldLogo className="w-7 h-7 hidden sm:block" />
+        <img src="/favicon.png" alt="LexGuard" className="w-7 h-7 object-contain hidden sm:block" />
         <div>
           <h1 className="text-base font-display font-semibold text-foreground leading-tight">
             {sectionTitles[activeSection] || "Dashboard"}
