@@ -13,8 +13,8 @@ pydantic==2.6.1
 google-generativeai==0.3.2
 
 # --- Vector Store & Embeddings ---
-faiss-cpu==1.7.4                  # use faiss-gpu if you have CUDA
-numpy==1.26.4
+faiss-cpu>=1.12.0                 # use faiss-gpu if you have CUDA
+numpy>=1.26.4
 
 # --- Document Processing ---
 PyMuPDF==1.23.22                  # PDF extraction
