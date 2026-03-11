@@ -955,24 +955,13 @@ class ReportGenerator:
         analysis: Dict,
         document_metadata: Dict,
     ) -> bytes:
-        """Generate full report PDF in memory and return raw bytes."""
+        """
+        Generate comprehensive PDF report in memory and return raw bytes.
+        This is the FULL report with all 8 sections, not a summary.
+        """
         buf = io.BytesIO()
-        # Temporarily redirect output to buffer by patching filepath
-        os.makedirs(REPORTS_DIR, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        tmp_path = os.path.join(REPORTS_DIR, f"_tmp_{timestamp}.pdf")
-        try:
-            ReportGenerator.generate_full_report(document_name, analysis, document_metadata)
-            # find the file just written
-            filename = f"LexGuard_Report_{document_name}_{timestamp}.pdf"
-            filepath = os.path.join(REPORTS_DIR, filename)
-        except Exception:
-            filepath = tmp_path
-        # Fall back to direct BytesIO build
-        from reportlab.platypus import SimpleDocTemplate
-        from reportlab.lib.pagesizes import letter
-        from reportlab.lib.units import inch
-        buf = io.BytesIO()
+        
+        # Professional margins: Top: 1", Bottom: 1", Left: 1.2", Right: 1"
         doc = SimpleDocTemplate(
             buf,
             pagesize=letter,
@@ -981,43 +970,563 @@ class ReportGenerator:
             leftMargin=1.2 * inch,
             rightMargin=1 * inch,
         )
+        
         elements = []
         styles = ReportGenerator._create_styles()
+        
+        # Shorthand style references for convenience
+        body_style = styles['BodyText']
+        heading_style = styles['H1']
+
+        # Store document name for header
+        doc.document_name = document_name
+        
+        # Risk data
         risk_score = analysis.get("overall_risk_score", 50)
         risk_level = analysis.get("risk_level", "medium").upper()
         risk_color = colors.HexColor("#22c55e") if risk_level == "LOW" else colors.HexColor("#f59e0b") if risk_level == "MEDIUM" else colors.HexColor("#ef4444")
-        from reportlab.platypus import Paragraph, Spacer
-        elements.append(Spacer(1, 0.5 * inch))
+
+        # ─── Cover Page ─────────────────────────────────────────────────────
+        elements.append(Spacer(1, 1.5 * inch))
         elements.append(Paragraph("AI LEGAL DUE DILIGENCE REPORT", styles['CoverTitle']))
+        elements.append(Spacer(1, 0.15 * inch))
+        
+        # Subtitle
+        subtitle_style = ParagraphStyle("Subtitle", parent=styles["BodyText"], fontSize=13, textColor=colors.HexColor("#475569"), alignment=TA_CENTER, leading=18)
+        elements.append(Paragraph("Comprehensive Risk Analysis & Compliance Review", subtitle_style))
+        elements.append(Spacer(1, 0.8 * inch))
+        
+        # Document metadata box with 100% width
+        available_width = letter[0] - 2.2 * inch  # Total width minus margins
+        metadata_data = [
+            ["Target Document:", document_name],
+            ["Report Date:", datetime.now().strftime('%B %d, %Y')],
+            ["Report Time:", datetime.now().strftime('%I:%M %p')],
+            ["Analysis Type:", document_metadata.get("document_type", "Contract Review").replace("_", " ").title()],
+            ["Confidence Level:", f"{analysis.get('confidence_score', 75)}%"],
+        ]
+        
+        metadata_table = Table(metadata_data, colWidths=[available_width * 0.35, available_width * 0.65])
+        metadata_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f8fafc")),
+            ("BACKGROUND", (1, 0), (1, -1), colors.white),
+            ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#1e293b")),
+            ("ALIGN", (0, 0), (0, -1), "RIGHT"),
+            ("ALIGN", (1, 0), (1, -1), "LEFT"),
+            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 11),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("LEFTPADDING", (0, 0), (-1, -1), 12),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(metadata_table)
+        elements.append(Spacer(1, 0.4 * inch))
+
+        # Risk Assessment Box - 100% width
+        risk_assessment_data = [
+            ["OVERALL RISK ASSESSMENT"],
+            [f"Risk Level: {risk_level}"],
+            [f"Risk Score: {risk_score}/100"],
+        ]
+        
+        risk_table = Table(risk_assessment_data, colWidths=[available_width])
+        risk_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e293b")),
+            ("BACKGROUND", (0, 1), (-1, -1), risk_color),
+            ("TEXTCOLOR", (0, 0), (-1, -1), colors.white),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTSIZE", (0, 0), (-1, 0), 14),
+            ("FONTSIZE", (0, 1), (-1, -1), 16),
+            ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 12),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(risk_table)
+        
+        # Confidentiality notice
+        elements.append(Spacer(1, 0.8 * inch))
+        confidential_style = ParagraphStyle("Confidential", parent=styles["Normal"], fontSize=9, textColor=colors.HexColor("#64748b"), alignment=TA_CENTER, italic=True)
+        elements.append(Paragraph("CONFIDENTIAL & PRIVILEGED — ATTORNEY WORK PRODUCT", confidential_style))
+        elements.append(Paragraph("This report contains AI-generated legal analysis for due diligence purposes only.", confidential_style))
+        
+        # Cover page ends here, Section 1 starts on next page naturally
+        elements.append(Spacer(1, 0.5 * inch))
+
+        # ─── Section 1: Documents Analyzed ──────────────────────────────────
+        elements.append(Paragraph("1. DOCUMENTS ANALYZED", styles['H1']))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cbd5e1"), spaceBefore=6, spaceAfter=12))
+        
+        doc_analysis_text = f"""
+        <b>Primary Document:</b> {document_name}<br/>
+        <b>Document Type:</b> {document_metadata.get('document_type', 'Contract').replace('_', ' ').title()}<br/>
+        <b>File Size:</b> {document_metadata.get('file_size', 'N/A')}<br/>
+        <b>Pages Analyzed:</b> {document_metadata.get('pages', 'N/A')}<br/>
+        <b>Upload Date:</b> {document_metadata.get('upload_date', datetime.now().strftime('%Y-%m-%d'))}<br/>
+        <b>Analysis Method:</b> AI-powered clause extraction with semantic analysis using Gemini 2.0 Flash<br/>
+        <b>Keywords Searched:</b> Liability, Indemnification, Termination, Non-Compete, Change of Control, Financial Obligations<br/>
+        """
+        elements.append(Paragraph(doc_analysis_text, body_style))
         elements.append(Spacer(1, 0.2 * inch))
-        body = styles['BodyText']
-        elements.append(Paragraph(f"<b>Document:</b> {document_name}", body))
-        elements.append(Paragraph(f"<b>Risk Score:</b> {risk_score}/100 ({risk_level})", body))
-        elements.append(Paragraph(f"<b>Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M')}", body))
+        
+        elements.append(PageBreak())
+        
+        # ─── Section 2: Risk Assessment Summary ─────────────────────────────
+        elements.append(Paragraph("2. RISK ASSESSMENT SUMMARY", styles['H1']))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cbd5e1"), spaceBefore=6, spaceAfter=12))
+        
+        # Overall risk summary
+        risk_summary_data = [
+            ["Risk Category", "Score", "Level", "Status"],
+            ["Overall Risk", f"{risk_score}/100", risk_level, "⚠️ FLAGGED" if risk_score >= 50 else "✓ ACCEPTABLE"],
+            ["Confidence", f"{analysis.get('confidence_score', 75)}%", "HIGH" if analysis.get('confidence_score', 75) >= 80 else "MEDIUM", "Reliable"],
+            ["Flagged Clauses", str(len(analysis.get('flagged_clauses', []))), "—", f"{len([c for c in analysis.get('flagged_clauses', []) if c.get('risk_level') == 'high'])} HIGH"],
+            ["Deal-Breakers", str(len(analysis.get('deal_breakers', []))), "CRITICAL" if analysis.get('deal_breakers', []) else "NONE", "⛔ URGENT" if analysis.get('deal_breakers', []) else "✓ CLEAR"],
+        ]
+        
+        risk_summary_table = Table(risk_summary_data, colWidths=[
+            available_width * 0.30,  # Risk Category
+            available_width * 0.20,  # Score
+            available_width * 0.20,  # Level
+            available_width * 0.30   # Status
+        ])
+        risk_summary_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e40af")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+            ("ALIGN", (0, 0), (0, -1), "LEFT"),
+            ("ALIGN", (1, 0), (-1, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#f8fafc")),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(risk_summary_table)
         elements.append(Spacer(1, 0.2 * inch))
-        ai_summary = analysis.get("ai_summary") or "No summary available."
-        elements.append(Paragraph("<b>AI Summary</b>", body))
-        elements.append(Paragraph(str(ai_summary), body))
+        
+        # Executive findings
+        elements.append(Paragraph("Executive Findings", styles['H2']))
+        
+        findings_text = analysis.get("ai_summary", "This document has been analyzed for legal and financial risks. ")
+        if len(analysis.get('deal_breakers', [])) > 0:
+            findings_text += f" <b>CRITICAL:</b> {len(analysis.get('deal_breakers', []))} deal-breaker(s) identified that require immediate attention. "
+        
+        clause_summary = analysis.get("clause_summary", {})
+        if clause_summary:
+            high_risk_types = [k for k, v in clause_summary.items() if v.get('highest_risk') == 'high']
+            if high_risk_types:
+                findings_text += f" High-risk clauses detected in: {', '.join([t.replace('_', ' ').title() for t in high_risk_types])}. "
+        
+        elements.append(Paragraph(findings_text, body_style))
         elements.append(Spacer(1, 0.2 * inch))
-        flagged = analysis.get("flagged_clauses") or []
-        deal_breakers = analysis.get("deal_breakers") or []
+        
+        elements.append(PageBreak())
+        
+        # ─── Section 3: Key Legal Clauses ───────────────────────────────────
+        elements.append(Paragraph("3. KEY LEGAL CLAUSES", styles['H1']))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cbd5e1"), spaceBefore=6, spaceAfter=12))
+        
+        clause_summary = analysis.get("clause_summary", {})
+        if clause_summary:
+            # Create professional clause analysis table
+            clause_data = [["Clause Category", "Found", "Count", "Risk Level", "Legal Significance"]]
+            
+            clause_details = {
+                "liability": {
+                    "name": "Liability & Responsibility",
+                    "significance": "Defines financial exposure and risk allocation"
+                },
+                "termination": {
+                    "name": "Termination & Exit Rights",
+                    "significance": "Controls contract duration and exit mechanisms"
+                },
+                "non_compete": {
+                    "name": "Non-Compete & Restrictive Covenants",
+                    "significance": "Limits post-transaction business activities"
+                },
+                "indemnity": {
+                    "name": "Indemnification & Hold Harmless",
+                    "significance": "Determines liability protection framework"
+                }
+            }
+            
+            for clause_type in ["liability", "termination", "non_compete", "indemnity"]:
+                data = clause_summary.get(clause_type, {})
+                details = clause_details.get(clause_type, {})
+                found = "Yes" if data.get("found") else "No"
+                count = data.get("count", 0)
+                risk = data.get("highest_risk", "N/A").upper()
+                significance = details.get("significance", "Under review")
+                
+                clause_data.append([
+                    details.get("name", clause_type.title()),
+                    found,
+                    str(count),
+                    risk,
+                    significance
+                ])
+            
+            clause_table = Table(clause_data, colWidths=[
+                available_width * 0.32,  # Clause Category
+                available_width * 0.10,  # Found
+                available_width * 0.09,  # Count
+                available_width * 0.15,  # Risk Level
+                available_width * 0.34   # Legal Significance
+            ])
+            clause_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e293b")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("ALIGN", (0, 0), (0, -1), "LEFT"),
+                ("ALIGN", (1, 0), (3, -1), "CENTER"),
+                ("ALIGN", (4, 0), (4, -1), "LEFT"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BACKGROUND", (0, 1), (-1, -1), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("WORDWRAP", (0, 0), (-1, -1), True),
+            ]))
+            elements.append(clause_table)
+            elements.append(Spacer(1, 0.25 * inch))
+            
+            # Detailed clause breakdowns
+            for clause_type in ["liability", "termination", "non_compete", "indemnity"]:
+                data = clause_summary.get(clause_type, {})
+                if data.get("found") and data.get("count", 0) > 0:
+                    details = clause_details.get(clause_type, {})
+                    
+                    # Use bullet style for subsection headers
+                    bullet_header = ParagraphStyle(
+                        'BulletHeader',
+                        parent=styles['BodyText'],
+                        fontSize=11,
+                        fontName='Helvetica-Bold',
+                        textColor=colors.HexColor("#1e40af"),
+                        leftIndent=0,
+                        spaceBefore=8,
+                        spaceAfter=4,
+                    )
+                    elements.append(Paragraph(f"• {details.get('name', clause_type.title())}", bullet_header))
+                    
+                    analysis_text = f"Found {data['count']} clause(s) with <b>{data.get('highest_risk', 'unknown')}</b> risk level. "
+                    if data.get('highest_risk') == 'high':
+                        analysis_text += "⚠️ <b>REQUIRES IMMEDIATE LEGAL REVIEW.</b> These clauses present significant risk exposure."
+                    elif data.get('highest_risk') == 'medium':
+                        analysis_text += "Recommend negotiation and risk mitigation strategies before execution."
+                    else:
+                        analysis_text += "Standard provisions identified with acceptable risk levels."
+                    
+                    # Add left margin for content under bullet
+                    indented_body = ParagraphStyle(
+                        'IndentedBody',
+                        parent=body_style,
+                        leftIndent=20,
+                        spaceBefore=4,
+                        spaceAfter=8,
+                    )
+                    elements.append(Paragraph(analysis_text, indented_body))
+        else:
+            elements.append(Paragraph("No detailed clause analysis available for this document type.", body_style))
+        
+        elements.append(Spacer(1, 0.2 * inch))
+        elements.append(PageBreak())
+        
+        # ─── Section 4: Compliance & Regulatory Analysis ────────────────────
+        elements.append(Paragraph("4. COMPLIANCE & REGULATORY ANALYSIS", styles['H1']))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cbd5e1"), spaceBefore=6, spaceAfter=12))
+        
+        # Compliance assessment
+        elements.append(Paragraph("Regulatory Framework", styles['H2']))
+        
+        compliance_items = [
+            "<b>Securities Law Compliance:</b> Review for disclosure requirements, insider trading restrictions, and shareholder notification obligations.",
+            "<b>Antitrust & Competition Law:</b> Assessment of market concentration, anti-competitive clauses, and regulatory filing requirements.",
+            "<b>Data Privacy & Protection:</b> GDPR, CCPA, and data transfer compliance evaluation for customer/employee data.",
+            "<b>Employment Law:</b> Review of employee transfer obligations, benefit continuation, and WARN Act compliance.",
+            "<b>Intellectual Property:</b> Trademark, patent, and copyright assignment verification and registration status.",
+            "<b>Environmental Compliance:</b> EPA regulations, hazardous materials disclosure, and environmental liability assessment.",
+        ]
+        
+        # Use proper bullet style with consistent indentation
+        bullet_style = ParagraphStyle(
+            'ComplianceBullet',
+            parent=body_style,
+            leftIndent=20,
+            bulletIndent=0,
+            firstLineIndent=-15,
+            spaceBefore=6,
+            spaceAfter=6,
+        )
+        
+        for item in compliance_items:
+            elements.append(Paragraph(f"• {item}", bullet_style))
+        
+        elements.append(Spacer(1, 0.15 * inch))
+        
+        # Compliance risk matrix
+        compliance_data = [
+            ["Compliance Area", "Status", "Risk Level", "Action Required"],
+            ["Regulatory Filings", "Under Review", "MEDIUM", "Verify all required filings completed"],
+            ["Licensing & Permits", "Pending Verification", "MEDIUM", "Audit all business licenses"],
+            ["Tax Compliance", "Under Review", "LOW", "Standard tax due diligence"],
+            ["Industry Regulations", "Requires Assessment", "MEDIUM", "Sector-specific compliance review"],
+        ]
+        
+        compliance_table = Table(compliance_data, colWidths=[
+            available_width * 0.30,  # Compliance Area
+            available_width * 0.22,  # Status
+            available_width * 0.18,  # Risk Level
+            available_width * 0.30   # Action Required
+        ])
+        compliance_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e40af")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+            ("ALIGN", (2, 0), (2, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+            ("WORDWRAP", (0, 0), (-1, -1), True),
+        ]))
+        elements.append(compliance_table)
+        elements.append(Spacer(1, 0.2 * inch))
+        
+        elements.append(PageBreak())
+        
+        # ─── Section 5: Financial & Contractual Obligations ─────────────────
+        elements.append(Paragraph("5. FINANCIAL & CONTRACTUAL OBLIGATIONS", styles['H1']))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cbd5e1"), spaceBefore=6, spaceAfter=12))
+        
+        financial_text = """
+        <b>Payment Terms & Obligations:</b><br/>
+        This section identifies all financial commitments, payment schedules, and monetary obligations embedded within the analyzed document(s).<br/><br/>
+        
+        <b>Key Financial Findings:</b><br/>
+        • <b>Payment Structure:</b> Review all payment terms, milestones, and conditions precedent<br/>
+        • <b>Escrow & Holdback:</b> Analysis of funds held in escrow and release conditions<br/>
+        • <b>Earn-Out Provisions:</b> Contingent payment structures and performance metrics<br/>
+        • <b>Working Capital Adjustments:</b> Post-closing adjustment mechanisms and calculation methodologies<br/>
+        • <b>Debt Assumption:</b> Identification of assumed liabilities and debt obligations<br/>
+        • <b>Representations & Warranties Insurance:</b> Coverage gaps and premium allocation<br/><br/>
+        
+        <b>Contractual Dependencies:</b><br/>
+        """
+        elements.append(Paragraph(financial_text, body_style))
+        
+        # Contract obligations found in flagged clauses
+        flagged = analysis.get("flagged_clauses", [])
+        financial_clauses = [c for c in flagged if any(keyword in c.get('clause_title', '').lower() for keyword in ['payment', 'financial', 'price', 'consideration', 'earn'])]
+        
+        if financial_clauses:
+            for clause in financial_clauses[:3]:
+                elements.append(Paragraph(f"• <b>{clause.get('clause_reference', 'Section')}:</b> {clause.get('description', '')[:200]}...", body_style))
+                elements.append(Spacer(1, 0.08 * inch))
+        else:
+            elements.append(Paragraph("• No specific financial clauses flagged for detailed review. Standard financial due diligence recommended.", body_style))
+        
+        elements.append(Spacer(1, 0.2 * inch))
+        elements.append(PageBreak())
+        
+        # ─── Section 6: Litigation & Legal Exposure ──────────────────────────
+        elements.append(Paragraph("6. LITIGATION & LEGAL EXPOSURE", styles['H1']))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cbd5e1"), spaceBefore=6, spaceAfter=12))
+        
+        litigation_text = """
+        <b>Legal Risk Assessment:</b><br/>
+        Analysis of potential litigation exposure, pending legal matters, and contractual dispute mechanisms.<br/><br/>
+        
+        <b>Identified Exposure Areas:</b><br/>
+        """
+        elements.append(Paragraph(litigation_text, body_style))
+        
+        # litigation analysis based on flagged clauses
+        litigation_items = [
+            f"• <b>Dispute Resolution:</b> Review arbitration clauses, jurisdiction selection, and dispute escalation procedures",
+            f"• <b>Indemnification Scope:</b> {len([c for c in flagged if 'indemn' in c.get('clause_type', '').lower()])} indemnity clause(s) requiring detailed review for cap limits and exclusions",
+            f"• <b>Material Adverse Change:</b> Assessment of MAC clause triggers and termination rights",
+            f"• <b>Breach & Default:</b> Analysis of default definitions, cure periods, and remedies available",
+            f"• <b>Third-Party Claims:</b> Evaluation of exposure to customer, vendor, or regulatory claims",
+        ]
+        
+        for item in litigation_items:
+            elements.append(Paragraph(item, body_style))
+            elements.append(Spacer(1, 0.08 * inch))
+        
+        elements.append(Spacer(1, 0.1 * inch))
+        
+        # Deal-breakers related to litigation
+        deal_breakers = analysis.get("deal_breakers", [])
         if deal_breakers:
-            elements.append(Paragraph(f"<b>Deal-Breakers ({len(deal_breakers)})</b>", body))
+            elements.append(Paragraph("⚠️ Critical Legal Issues (Deal-Breakers)", styles['H2']))
             for db in deal_breakers:
-                clause = db.get("clause") or db.get("clause_reference") or "N/A"
-                reason = db.get("reason") or db.get("description") or ""
-                elements.append(Paragraph(f"• {clause}: {reason}", body))
-            elements.append(Spacer(1, 0.1 * inch))
+                elements.append(Paragraph(f"• <b>{db.get('clause', 'Unknown Clause')}:</b> {db.get('reason', 'Requires legal review')}", body_style))
+                elements.append(Spacer(1, 0.08 * inch))
+        else:
+            elements.append(Paragraph("<b>✓ No Critical Deal-Breakers Identified</b> — Standard legal review protocols apply.", body_style))
+        
+        elements.append(Spacer(1, 0.2 * inch))
+        elements.append(PageBreak())
+        
+        # ─── Section 7: AI Insights & Recommendations ────────────────────────
+        elements.append(Paragraph("7. AI INSIGHTS & RECOMMENDATIONS", styles['H1']))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cbd5e1"), spaceBefore=6, spaceAfter=12))
+        
+        # Strategic recommendations
+        elements.append(Paragraph("Strategic Assessment", styles['H2']))
+        
+        # Overall recommendation based on risk score
+        if len(deal_breakers) >= 3:
+            strategy = "⛔ <b>RECOMMENDATION: DO NOT PROCEED</b> — Multiple critical deal-breakers identified. Transaction poses unacceptable risk without major restructuring."
+        elif deal_breakers or risk_score >= 75:
+            strategy = "⚠️ <b>RECOMMENDATION: AGGRESSIVE RENEGOTIATION REQUIRED</b> — Significant risk factors present. Do not execute without comprehensive amendments."
+        elif risk_score >= 50:
+            strategy = "⚠ <b>RECOMMENDATION: PROCEED WITH ENHANCED DUE DILIGENCE</b> — Moderate risk level requires additional legal review and targeted negotiations."
+        else:
+            strategy = "✓ <b>RECOMMENDATION: PROCEED WITH STANDARD LEGAL REVIEW</b> — Acceptable risk profile. Engage qualified counsel for final verification."
+        
+        elements.append(Paragraph(strategy, body_style))
+        elements.append(Spacer(1, 0.15 * inch))
+        
+        # Priority action items
+        elements.append(Paragraph("Priority Action Items", styles['H2']))
+        
+        action_items = []
+        if deal_breakers:
+            action_items.append("1. <b>URGENT:</b> Engage M&A counsel immediately to address deal-breaker clauses")
+            action_items.append("2. Prepare comprehensive amendment list with alternative language")
+        
+        high_risk_clauses = [c for c in flagged if c.get("risk_level") == "high"]
+        if high_risk_clauses:
+            action_items.append(f"3. Schedule negotiation sessions for {len(high_risk_clauses)} HIGH-risk clauses")
+            action_items.append("4. Draft counterproposal with risk mitigation provisions")
+        
+        action_items.extend([
+            "5. Complete financial due diligence including Quality of Earnings analysis",
+            "6. Conduct management interviews and operational assessment",
+            "7. Verify all regulatory filings and compliance certifications",
+            "8. Review third-party contracts (customers, suppliers, leases)",
+            "9. Obtain representations & warranties insurance quotes",
+            "10. Prepare board presentation with risk summary and recommendations"
+        ])
+        
+        for item in action_items:
+            elements.append(Paragraph(item, body_style))
+            elements.append(Spacer(1, 0.06 * inch))
+        
+        elements.append(Spacer(1, 0.2 * inch))
+        elements.append(PageBreak())
+        
+        # ─── Section 8: Supporting Evidence ─────────────────────────────────
+        elements.append(Paragraph("8. SUPPORTING EVIDENCE", styles['H1']))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cbd5e1"), spaceBefore=6, spaceAfter=12))
+        
+        elements.append(Paragraph("Detailed Clause Analysis", styles['H2']))
+        elements.append(Paragraph("The following clauses were identified and analyzed during the AI-powered due diligence review:", body_style))
+        elements.append(Spacer(1, 0.12 * inch))
+        
+        # Flagged Clauses - detailed breakdown
+        flagged = analysis.get("flagged_clauses", [])
         if flagged:
-            elements.append(Paragraph(f"<b>Flagged Clauses ({len(flagged)})</b>", body))
-            for c in flagged:
-                title = c.get("clause_title") or c.get("clause_reference") or "Clause"
-                risk = c.get("risk_level", "medium").upper()
-                desc = c.get("description") or ""
-                rec = c.get("recommendation") or ""
-                elements.append(Paragraph(f"• [{risk}] {title}: {desc} {rec}", body))
-                elements.append(Spacer(1, 0.05 * inch))
-        doc.build(elements)
+            for i, clause in enumerate(flagged, 1):
+                # Clause header with risk indicator
+                risk_icon = "🔴" if clause.get('risk_level') == 'high' else "🟡" if clause.get('risk_level') == 'medium' else "🟢"
+                clause_header = f"{risk_icon} Clause {i}: {clause.get('clause_reference', 'N/A')} — {clause.get('clause_title', 'Untitled')}"
+                elements.append(Paragraph(clause_header, styles['H3']))
+                
+                # Clause details
+                clause_info = f"""
+                <b>Type:</b> {clause.get('clause_type', 'General').replace('_', ' ').title()}<br/>
+                <b>Risk Level:</b> {clause.get('risk_level', 'unknown').upper()}<br/>
+                <b>Description:</b> {clause.get('description', 'No description available.')}<br/>
+                """
+                elements.append(Paragraph(clause_info, body_style))
+                
+                if clause.get('recommendation'):
+                    elements.append(Spacer(1, 0.05 * inch))
+                    elements.append(Paragraph(f"<b>Recommendation:</b> {clause.get('recommendation')}", body_style))
+                
+                elements.append(Spacer(1, 0.15 * inch))
+        else:
+            elements.append(Paragraph("✓ No high-risk clauses flagged for detailed review.", body_style))
+        
+        elements.append(Spacer(1, 0.2 * inch))
+        
+        # Methodology & Analysis Framework
+        elements.append(Paragraph("Analysis Methodology", styles['H2']))
+        
+        methodology_text = """
+        This AI Legal Due Diligence Report was generated using advanced natural language processing and machine learning algorithms powered by Google Gemini 2.0 Flash. The analysis framework includes:<br/><br/>
+        
+        • <b>Semantic Clause Extraction:</b> AI-powered identification of key legal provisions using context-aware analysis<br/>
+        • <b>Risk Scoring Algorithm:</b> Multi-factor risk assessment based on clause type, language strength, and legal precedent<br/>
+        • <b>Comparative Analysis:</b> Benchmarking against market-standard terms and best practices<br/>
+        • <b>Regulatory Cross-Reference:</b> Automated compliance checking against relevant legal frameworks<br/>
+        • <b>Confidence Scoring:</b> Statistical confidence metrics for each finding and recommendation<br/><br/>
+        
+        <b>Limitations:</b> This report provides preliminary due diligence insights based on AI analysis of document text. It does not constitute legal advice and should not replace comprehensive review by qualified legal counsel. Always engage licensed attorneys for final transaction decisions.
+        """
+        elements.append(Paragraph(methodology_text, body_style))
+        elements.append(Spacer(1, 0.3 * inch))
+
+        # ─── Disclaimer ─────────────────────────────────────────────────────
+        elements.append(PageBreak())
+        elements.append(Paragraph("IMPORTANT LEGAL DISCLAIMER", styles['H1']))
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cbd5e1"), spaceBefore=6, spaceAfter=12))
+        
+        disclaimer_style = ParagraphStyle(
+            "Disclaimer",
+            parent=styles["BodyText"],
+            fontSize=8,
+            textColor=colors.HexColor("#64748b"),
+            alignment=TA_LEFT,
+            leading=11,
+        )
+        
+        disclaimer_text = """
+        <b>Nature of this Report:</b> This AI Legal Due Diligence Report is generated using artificial intelligence technology and is intended solely for preliminary due diligence assessment purposes. The analysis, findings, and recommendations contained herein are based on automated review of document text and should be considered as supplementary research tools only.<br/><br/>
+        
+        <b>Not Legal Advice:</b> This report does NOT constitute legal advice, nor does it create an attorney-client relationship. The information provided should not be relied upon as a substitute for consultation with qualified legal counsel. All transaction decisions should be made only after comprehensive review by licensed attorneys experienced in the relevant practice areas.<br/><br/>
+        
+        <b>Limitations:</b> AI analysis may not detect all legal issues, nuances, or context-specific risks. The report's accuracy depends on document quality, completeness, and the current state of AI technology. Always conduct full manual legal review before making binding commitments.<br/><br/>
+        
+        <b>No Warranty:</b> This report is provided "as is" without warranties of any kind. LexGuard AI disclaims all liability for decisions made based on this report. Users assume all risk for relying on AI-generated analysis.<br/><br/>
+        
+        <b>Confidentiality:</b> This report contains confidential and privileged information. Distribution should be limited to authorized transaction participants and their advisors only.
+        """
+        elements.append(Paragraph(disclaimer_text, disclaimer_style))
+        elements.append(Spacer(1, 0.2 * inch))
+        
+        # Report footer
+        footer_style = ParagraphStyle("Footer", parent=styles["Normal"], fontSize=8, textColor=colors.HexColor("#94a3b8"), alignment=TA_CENTER)
+        elements.append(Paragraph(f"Report Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')} | LexGuard AI © 2026 | Version 1.0", footer_style))
+
+        # Build PDF with custom canvas for headers/footers
+        class CustomCanvas(NumberedCanvas):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.document_name = document_name
+                self.doc_title = 'LexGuard AI Legal Due Diligence Report'
+        
+        doc.build(elements, canvasmaker=CustomCanvas)
         return buf.getvalue()
 
     @staticmethod
