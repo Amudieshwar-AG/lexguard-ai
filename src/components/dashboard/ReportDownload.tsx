@@ -1,20 +1,40 @@
-import { Download, FileText, Share2, Printer, CheckCircle2, Clock, FileDown, Loader2, FileBarChart2 } from "lucide-react";
+import { Download, FileText, Share2, Printer, CheckCircle2, FileDown, Loader2, FileBarChart2, AlertCircle } from "lucide-react";
 import { useReports } from "@/hooks/useReports";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export function ReportDownload() {
   const { reports, loading, error, generateReport, downloadReport } = useReports();
   const { documents } = useDocuments();
+  const { toast } = useToast();
   const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
-  async function handleGenerate() {
+  async function handleGenerate(type: "full_due_diligence" | "executive_summary" = "full_due_diligence") {
     if (documents.length === 0) return;
     setGenerating(true);
+    setGenError(null);
     try {
-      await generateReport(documents[0].id, "full_due_diligence");
+      await generateReport(documents[0].id, type);
+      toast({ title: "Report ready", description: "Your PDF report has been generated." });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message
+        : typeof err === 'object' && err !== null && 'message' in err
+          ? String((err as { message: unknown }).message) : String(err);
+      setGenError(msg);
+      toast({ title: "Report generation failed", description: msg, variant: "destructive" });
     } finally {
       setGenerating(false);
+    }
+  }
+
+  async function handleDownload(report: Parameters<typeof downloadReport>[0]) {
+    try {
+      await downloadReport(report);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast({ title: "Download failed", description: msg, variant: "destructive" });
     }
   }
 
@@ -40,33 +60,53 @@ export function ReportDownload() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display font-semibold text-foreground text-base">Report Downloads</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">AI-generated due diligence reports ready for export</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Reports are auto-generated after document analysis
+          </p>
         </div>
-        <button
-          className="btn-primary text-xs"
-          onClick={handleGenerate}
-          disabled={generating || documents.length === 0}
-        >
-          {generating ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
-          {generating ? "Generating..." : "Generate New Report"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className="btn-secondary text-xs"
+            onClick={() => handleGenerate("executive_summary")}
+            disabled={generating || documents.length === 0}
+            title="Manually generate executive summary"
+          >
+            {generating ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
+            Regenerate Summary
+          </button>
+          <button
+            className="btn-primary text-xs"
+            onClick={() => handleGenerate("full_due_diligence")}
+            disabled={generating || documents.length === 0}
+            title="Manually generate full report"
+          >
+            {generating ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
+            {generating ? "Generating…" : "Regenerate Full Report"}
+          </button>
+        </div>
       </div>
+
+      {genError && (
+        <div className="flex items-start gap-2 text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
+          <AlertCircle size={13} className="shrink-0 mt-0.5" />
+          <span><strong>Generation failed:</strong> {genError}</span>
+        </div>
+      )}
 
       {reports.length === 0 ? (
         <div className="card-glass p-12 flex flex-col items-center justify-center text-center">
           <FileBarChart2 size={48} className="text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No Reports Yet</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No Reports Available</h3>
           <p className="text-sm text-muted-foreground max-w-md">
             {documents.length === 0
-              ? "Upload documents first, then generate AI-powered due diligence reports."
-              : "Click \"Generate New Report\" to create your first AI-powered report."}
+              ? "Upload and analyze documents to automatically generate AI-powered due diligence reports."
+              : "Analyze your documents in the Risk Analysis section. Reports will be automatically generated."}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {reports.map((report) => {
             const doc = documents.find(d => d.id === report.document_id);
-            const isReady = report.status === "completed";
             const createdAt = new Date(report.created_at).toLocaleString();
 
             return (
@@ -85,46 +125,31 @@ export function ReportDownload() {
                       {doc?.file_name || "Unknown document"}
                     </p>
                   </div>
-                  {isReady ? (
-                    <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" />
-                  ) : (
-                    <Clock size={16} className="text-warning animate-spin shrink-0 mt-0.5" />
-                  )}
+                  <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" />
                 </div>
 
                 {/* Meta */}
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs uppercase">
-                    {report.format || "PDF"}
-                  </span>
-                  <span className="capitalize">{report.status}</span>
+                  <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs uppercase">PDF</span>
+                  <span className="capitalize">Ready</span>
                   <span className="ml-auto">{createdAt}</span>
                 </div>
 
                 {/* Actions */}
-                {isReady ? (
-                  <div className="flex items-center gap-2 pt-1 border-t border-border">
-                    <button
-                      onClick={() => downloadReport(report)}
-                      className="btn-primary flex-1 justify-center text-xs py-2"
-                    >
-                      <Download size={13} /> Download
-                    </button>
-                    <button className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                      <Share2 size={13} />
-                    </button>
-                    <button className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                      <Printer size={13} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 pt-1 border-t border-border">
-                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-primary w-2/3 animate-pulse" />
-                    </div>
-                    <span className="text-xs text-muted-foreground">Processing...</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 pt-1 border-t border-border">
+                  <button
+                    onClick={() => handleDownload(report)}
+                    className="btn-primary flex-1 justify-center text-xs py-2"
+                  >
+                    <Download size={13} /> Download PDF
+                  </button>
+                  <button className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <Share2 size={13} />
+                  </button>
+                  <button className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <Printer size={13} />
+                  </button>
+                </div>
               </div>
             );
           })}

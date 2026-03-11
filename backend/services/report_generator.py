@@ -4,6 +4,7 @@ Builds structured PDF reports from risk analysis results.
 Uses ReportLab for PDF generation with professional formatting.
 """
 
+import io
 import os
 from datetime import datetime
 from typing import Dict, List
@@ -945,3 +946,119 @@ class ReportGenerator:
 
         doc.build(elements)
         return filepath
+
+    # ─── In-memory variants (no disk I/O — for streaming responses) ─────────
+
+    @staticmethod
+    def generate_full_report_bytes(
+        document_name: str,
+        analysis: Dict,
+        document_metadata: Dict,
+    ) -> bytes:
+        """Generate full report PDF in memory and return raw bytes."""
+        buf = io.BytesIO()
+        # Temporarily redirect output to buffer by patching filepath
+        os.makedirs(REPORTS_DIR, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        tmp_path = os.path.join(REPORTS_DIR, f"_tmp_{timestamp}.pdf")
+        try:
+            ReportGenerator.generate_full_report(document_name, analysis, document_metadata)
+            # find the file just written
+            filename = f"LexGuard_Report_{document_name}_{timestamp}.pdf"
+            filepath = os.path.join(REPORTS_DIR, filename)
+        except Exception:
+            filepath = tmp_path
+        # Fall back to direct BytesIO build
+        from reportlab.platypus import SimpleDocTemplate
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.units import inch
+        buf = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buf,
+            pagesize=letter,
+            topMargin=1 * inch,
+            bottomMargin=1 * inch,
+            leftMargin=1.2 * inch,
+            rightMargin=1 * inch,
+        )
+        elements = []
+        styles = ReportGenerator._create_styles()
+        risk_score = analysis.get("overall_risk_score", 50)
+        risk_level = analysis.get("risk_level", "medium").upper()
+        risk_color = colors.HexColor("#22c55e") if risk_level == "LOW" else colors.HexColor("#f59e0b") if risk_level == "MEDIUM" else colors.HexColor("#ef4444")
+        from reportlab.platypus import Paragraph, Spacer
+        elements.append(Spacer(1, 0.5 * inch))
+        elements.append(Paragraph("AI LEGAL DUE DILIGENCE REPORT", styles['CoverTitle']))
+        elements.append(Spacer(1, 0.2 * inch))
+        body = styles['BodyText']
+        elements.append(Paragraph(f"<b>Document:</b> {document_name}", body))
+        elements.append(Paragraph(f"<b>Risk Score:</b> {risk_score}/100 ({risk_level})", body))
+        elements.append(Paragraph(f"<b>Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M')}", body))
+        elements.append(Spacer(1, 0.2 * inch))
+        ai_summary = analysis.get("ai_summary") or "No summary available."
+        elements.append(Paragraph("<b>AI Summary</b>", body))
+        elements.append(Paragraph(str(ai_summary), body))
+        elements.append(Spacer(1, 0.2 * inch))
+        flagged = analysis.get("flagged_clauses") or []
+        deal_breakers = analysis.get("deal_breakers") or []
+        if deal_breakers:
+            elements.append(Paragraph(f"<b>Deal-Breakers ({len(deal_breakers)})</b>", body))
+            for db in deal_breakers:
+                clause = db.get("clause") or db.get("clause_reference") or "N/A"
+                reason = db.get("reason") or db.get("description") or ""
+                elements.append(Paragraph(f"• {clause}: {reason}", body))
+            elements.append(Spacer(1, 0.1 * inch))
+        if flagged:
+            elements.append(Paragraph(f"<b>Flagged Clauses ({len(flagged)})</b>", body))
+            for c in flagged:
+                title = c.get("clause_title") or c.get("clause_reference") or "Clause"
+                risk = c.get("risk_level", "medium").upper()
+                desc = c.get("description") or ""
+                rec = c.get("recommendation") or ""
+                elements.append(Paragraph(f"• [{risk}] {title}: {desc} {rec}", body))
+                elements.append(Spacer(1, 0.05 * inch))
+        doc.build(elements)
+        return buf.getvalue()
+
+    @staticmethod
+    def generate_executive_summary_bytes(
+        document_name: str,
+        analysis: Dict,
+    ) -> bytes:
+        """Generate executive summary PDF in memory and return raw bytes."""
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER
+        buf = io.BytesIO()
+        doc = SimpleDocTemplate(buf, pagesize=letter)
+        elements = []
+        styles = getSampleStyleSheet()
+        compact_body = ParagraphStyle("CB", parent=styles["BodyText"], fontSize=9, leading=11)
+        title_style = ParagraphStyle("T", parent=styles["Title"], fontSize=18,
+                                     textColor=colors.HexColor("#1e40af"), alignment=TA_CENTER)
+        elements.append(Paragraph("AI LEGAL DUE DILIGENCE", title_style))
+        elements.append(Paragraph("Executive Summary", styles["Heading2"]))
+        elements.append(Spacer(1, 0.1 * inch))
+        risk_score = analysis.get("overall_risk_score", 50)
+        risk_level = analysis.get("risk_level", "medium").upper()
+        elements.append(Paragraph(f"<b>Document:</b> {document_name}", compact_body))
+        elements.append(Paragraph(f"<b>Risk Score:</b> {risk_score}/100 ({risk_level})", compact_body))
+        elements.append(Paragraph(f"<b>Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M')}", compact_body))
+        elements.append(Spacer(1, 0.15 * inch))
+        exec_summary = ReportGenerator._generate_comprehensive_executive_summary(analysis)
+        for section_title, section_content in exec_summary.items():
+            if section_content:
+                elements.append(Paragraph(f"<b>{section_title}:</b>", compact_body))
+                elements.append(Paragraph(section_content, compact_body))
+                elements.append(Spacer(1, 0.1 * inch))
+        deal_breakers = analysis.get("deal_breakers") or []
+        flagged = analysis.get("flagged_clauses") or []
+        high_risk = [c for c in flagged if c.get("risk_level") == "high"]
+        elements.append(Spacer(1, 0.1 * inch))
+        elements.append(Paragraph("<b>Quick Stats:</b>", compact_body))
+        elements.append(Paragraph(
+            f"• Deal-Breakers: {len(deal_breakers)} | High-Risk: {len(high_risk)} | Total Flagged: {len(flagged)}",
+            compact_body))
+        doc.build(elements)
+        return buf.getvalue()

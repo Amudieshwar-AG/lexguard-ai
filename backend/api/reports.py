@@ -4,9 +4,10 @@ Builds PDF reports from risk analysis results.
 """
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Dict
+import io
 
 from services.report_generator import ReportGenerator
 from config import REPORTS_DIR
@@ -58,6 +59,36 @@ async def generate_report(request: ReportRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
+
+
+@router.post("/stream")
+async def stream_report(request: ReportRequest):
+    """
+    Generate a PDF report and return it directly as a binary stream.
+    No file is stored on disk — safe for ephemeral deployments (Render free tier).
+    """
+    try:
+        if request.report_type == "summary":
+            pdf_bytes = ReportGenerator.generate_executive_summary_bytes(
+                document_name=request.document_name,
+                analysis=request.analysis,
+            )
+            filename = f"LexGuard_Summary_{request.document_name}.pdf"
+        else:
+            pdf_bytes = ReportGenerator.generate_full_report_bytes(
+                document_name=request.document_name,
+                analysis=request.analysis,
+                document_metadata=request.document_metadata,
+            )
+            filename = f"LexGuard_Report_{request.document_name}.pdf"
+
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Report streaming failed: {str(e)}")
 
 
 @router.get("/download/{filename}")
