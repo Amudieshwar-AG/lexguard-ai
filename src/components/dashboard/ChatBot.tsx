@@ -18,14 +18,22 @@ const SUGGESTED_PROMPTS = [
   "What should I negotiate before signing?",
 ];
 
-const INITIAL_MESSAGES: Message[] = [
-  {
-    id: "welcome",
-    role: "assistant",
-    content: "Hello! I'm your **LexGuard AI Legal Assistant**, powered by Google Gemini. I've analyzed your uploaded documents and I'm ready to help.\n\nYou can ask me to explain clauses, summarize agreements, identify risks, or provide legal insights. How can I assist you today?",
-    ts: "Just now",
-  },
-];
+const MOCK_RESPONSES: Record<string, string> = {
+  risk: "Based on my analysis, the major risks in this contract include:\n\n**1. Termination Clauses** — Change-of-control provisions could allow counterparty to exit without penalty.\n\n**2. Indemnification Cap** — The cap at 1× fees is considered inadequate for enterprise agreements.\n\n**3. IP Ownership** — Section 8 lacks clarity on work-product ownership during the engagement period.\n\nI recommend reviewing these with your legal counsel before signing.",
+  clause: "Clause 5.2 relates to **Limitation of Liability**. In plain terms: neither party can be held responsible for indirect losses (like lost profits) even if they knew the risk existed. The cap limits total liability to the fees paid in the prior 12 months. This is a fairly standard clause, though the cap amount may be worth negotiating upward.",
+  summar: "**Document Summary:**\n\nThis is a commercial services agreement between two parties covering a 24-month engagement. Key terms include:\n- **Scope**: Software development and consulting services\n- **Payment**: Monthly retainer plus milestone-based fees\n- **IP**: All deliverables assigned to the client upon full payment\n- **Termination**: 30-day notice for convenience, immediate for cause\n\nOverall risk level: **Medium-High** based on indemnification and liability terms.",
+  complian: "The following compliance issues were identified:\n\n**GDPR / Data Privacy** — Section 12 lacks a Data Processing Agreement (DPA) as required under GDPR Article 28.\n\n**Export Controls** — No mention of export compliance obligations which may apply given the technology involved.\n\n**Employment Law** — Contractor classification language in Section 3 may conflict with local employment statutes.\n\nRecommendation: Attach a DPA addendum and add a compliance representations clause.",
+  "non-compete": "Non-compete enforceability depends heavily on jurisdiction. Based on the contract language:\n\n- **Duration**: 24 months post-termination — this may be excessive in states like California (where non-competes are largely unenforceable).\n- **Geographic Scope**: Global scope is broadly written and faces scrutiny in EU jurisdictions.\n- **Scope of Activity**: \"Substantially similar business\" is vague.\n\nIn most US states, courts will narrow (blue-pencil) overly broad non-competes rather than void them entirely.",
+  negotiat: "Key items to negotiate before signing:\n\n**1. Liability Cap** — Push for 2× or 3× annual fees instead of 1×.\n\n**2. IP Warranty** — Request a warranty that deliverables are free of third-party IP encumbrances.\n\n**3. Payment Terms** — Net-30 is standard; push back on Net-15 if present.\n\n**4. Termination for Convenience** — Increase notice period from 30 to 60 days.\n\n**5. Dispute Resolution** — Prefer arbitration with a neutral venue over the counterparty's home jurisdiction.",
+};
+
+function getMockResponse(text: string): string {
+  const lower = text.toLowerCase();
+  for (const [key, response] of Object.entries(MOCK_RESPONSES)) {
+    if (lower.includes(key.replace("-", " "))) return response;
+  }
+  return "Thank you for your question. Based on my analysis of the uploaded documents, I can see several relevant clauses that apply here. The contract contains standard commercial terms with a few provisions that warrant closer attention — particularly around liability, termination rights, and IP ownership. I'd recommend focusing on Sections 5, 8, and 12 when reviewing with your legal team.\n\nWould you like me to explain any specific clause in more detail?";
+}
 
 function TypingIndicator() {
   return (
@@ -39,7 +47,6 @@ function TypingIndicator() {
 }
 
 function formatContent(content: string) {
-  // Simple markdown-like rendering
   return content
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br/>');
@@ -50,8 +57,15 @@ interface ChatBotProps {
   publishableKey?: string;
 }
 
+const WELCOME_MESSAGE: Message = {
+  id: "welcome",
+  role: "assistant",
+  content: "Hello! I'm your **LexGuard AI Legal Assistant**. I've analyzed your uploaded documents and I'm ready to help.\n\nYou can ask me to explain clauses, summarize agreements, identify risks, or provide legal insights. How can I assist you today?",
+  ts: "Just now",
+};
+
 export function ChatBot({ supabaseUrl, publishableKey }: ChatBotProps) {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -64,6 +78,7 @@ export function ChatBot({ supabaseUrl, publishableKey }: ChatBotProps) {
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
+
     setShowSuggestions(false);
 
     const userMsg: Message = {
@@ -76,95 +91,17 @@ export function ChatBot({ supabaseUrl, publishableKey }: ChatBotProps) {
     setInput("");
     setIsLoading(true);
 
-    try {
-      if (supabaseUrl && publishableKey) {
-        // Real AI call via edge function
-        const conversationMessages = [...messages, userMsg].map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 1200 + Math.random() * 800));
 
-        const response = await fetch(`${supabaseUrl}/functions/v1/lexguard-chat`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${publishableKey}`,
-          },
-          body: JSON.stringify({ messages: conversationMessages }),
-        });
-
-        if (!response.ok || !response.body) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error || "Request failed");
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let assistantText = "";
-        const assistantId = (Date.now() + 1).toString();
-
-        setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", ts: "Just now" }]);
-
-        let buffer = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          let newlineIdx: number;
-          while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
-            let line = buffer.slice(0, newlineIdx);
-            buffer = buffer.slice(newlineIdx + 1);
-            if (line.endsWith("\r")) line = line.slice(0, -1);
-            if (line.startsWith(":") || !line.trim()) continue;
-            if (!line.startsWith("data: ")) continue;
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === "[DONE]") break;
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const delta = parsed.choices?.[0]?.delta?.content;
-              if (delta) {
-                assistantText += delta;
-                setMessages((prev) =>
-                  prev.map((m) => m.id === assistantId ? { ...m, content: assistantText } : m)
-                );
-              }
-            } catch { /* partial */ }
-          }
-        }
-      } else {
-        // Fallback mock responses for demo
-        await new Promise((r) => setTimeout(r, 1500));
-        const mockResponses: Record<string, string> = {
-          "risk": "Based on my analysis of **Share_Purchase_Agreement_2024.pdf**, I've identified **3 high-risk** and **2 medium-risk** issues:\n\n**🔴 Critical:**\n• **§5.2 Change of Control** — triggers automatic termination without notice\n• **§8.1 Liability Cap** — restricts recovery to 12-month contract value only\n\n**🟡 Medium:**\n• **§12.4 Non-Compete** — 3-year duration may not be enforceable across all jurisdictions\n• **§15.7 Arbitration Venue** — Singapore-only clause limits EU party rights\n\nI recommend prioritizing negotiation of the liability cap and change-of-control provisions before execution.",
-          "clause": "**§5.2 — Change of Control Provision** (Explained Simply):\n\nThis clause means: *if someone buys more than 25% of the company, all contracts automatically end immediately — no warning, no transition period.*\n\n**Why it's risky:**\n• No notice period for the acquirer to renegotiate\n• Could void customer contracts mid-acquisition\n• Creates significant enterprise value risk\n\n**Recommended fix:** Request a 90-day cure period and require written consent rather than automatic termination.",
-          "summary": "**Agreement Summary: Share Purchase Agreement 2024**\n\n📋 **Transaction:** Acquisition of TechCorp Holdings Ltd for ~$142M\n👥 **Parties:** Buyer Corp (acquirer) & TechCorp Holdings Ltd (target)\n📄 **Length:** 48 pages across 22 sections\n\n**Key Terms:**\n• Purchase price: $142M (80% cash, 20% earnout)\n• Closing conditions: Regulatory approval + material adverse change\n• Representations & warranties: 24 months post-closing\n\n**⚠️ Top Concerns:**\n1. Aggressive change-of-control provision\n2. Missing GDPR data processing addendum\n3. Overly broad IP assignment scope\n\nOverall risk assessment: **73% (High)**",
-        };
-
-        let responseContent = "I've analyzed your uploaded documents. Based on the **Share_Purchase_Agreement_2024.pdf** and related filings:\n\nThis appears to be a complex acquisition agreement with several areas requiring careful review. The overall risk profile is **High (73%)** based on 48 detected clauses.\n\nCould you be more specific about what aspect you'd like me to analyze? I can:\n• Explain specific clause numbers\n• Compare terms against market standards\n• Identify negotiation leverage points\n• Assess jurisdiction-specific risks";
-
-        const lowerText = text.toLowerCase();
-        if (lowerText.includes("risk") || lowerText.includes("major")) responseContent = mockResponses.risk;
-        else if (lowerText.includes("clause") || lowerText.includes("5.2") || lowerText.includes("explain")) responseContent = mockResponses.clause;
-        else if (lowerText.includes("summar")) responseContent = mockResponses.summary;
-
-        setMessages((prev) => [...prev, {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: responseContent,
-          ts: "Just now",
-        }]);
-      }
-    } catch (error: any) {
-      setMessages((prev) => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: `⚠️ ${error?.message || "Something went wrong. Please try again."}`,
-        ts: "Just now",
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
+    const assistantMsg: Message = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant",
+      content: getMockResponse(text),
+      ts: "Just now",
+    };
+    setMessages((prev) => [...prev, assistantMsg]);
+    setIsLoading(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -175,7 +112,7 @@ export function ChatBot({ supabaseUrl, publishableKey }: ChatBotProps) {
   };
 
   const clearChat = () => {
-    setMessages(INITIAL_MESSAGES);
+    setMessages([WELCOME_MESSAGE]);
     setShowSuggestions(true);
   };
 

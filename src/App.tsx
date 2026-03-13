@@ -29,8 +29,8 @@ const App = () => (
               <Route path="/dashboard" element={<Index />} />
             </Route>
 
-            {/* Redirect root to dashboard (ProtectedRoute will bounce to /login if needed) */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Redirect root to login; Login page will skip through if already authenticated */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />

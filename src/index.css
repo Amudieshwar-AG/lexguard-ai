@@ -199,3 +199,26 @@
     align-self: flex-start;
   }
 }
+
+/* Float animation for logo with up → pause → down → repeat pattern */
+@keyframes logoFloat {
+  0% {
+    transform: translateY(0px) scale(1);
+  }
+  25% {
+    transform: translateY(-20px) scale(1.05);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
+  75% {
+    transform: translateY(0px) scale(1);
+  }
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+}
+
+.animate-toss {
+  animation: logoFloat 3s ease-in-out infinite;
+}

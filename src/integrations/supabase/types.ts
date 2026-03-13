@@ -14,7 +14,164 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      documents: {
+        Row: {
+          id: string
+          user_id: string
+          file_name: string
+          file_type: string
+          file_size: number
+          file_path: string
+          status: "processing" | "completed" | "error"
+          pages: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          file_name: string
+          file_type: string
+          file_size: number
+          file_path: string
+          status?: "processing" | "completed" | "error"
+          pages?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          file_name?: string
+          file_type?: string
+          file_size?: number
+          file_path?: string
+          status?: "processing" | "completed" | "error"
+          pages?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      risk_analyses: {
+        Row: {
+          id: string
+          document_id: string
+          user_id: string
+          overall_risk_score: number
+          risk_level: "low" | "medium" | "high"
+          ai_summary: string | null
+          confidence_score: number | null
+          clause_summary: {
+            liability:   { found: boolean; count: number; highest_risk: string }
+            termination: { found: boolean; count: number; highest_risk: string }
+            non_compete: { found: boolean; count: number; highest_risk: string }
+            indemnity:   { found: boolean; count: number; highest_risk: string }
+          } | null
+          status: "pending" | "in_progress" | "completed" | "failed"
+          analyzed_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          user_id: string
+          overall_risk_score: number
+          risk_level: "low" | "medium" | "high"
+          ai_summary?: string | null
+          confidence_score?: number | null
+          clause_summary?: Record<string, unknown> | null
+          status?: "pending" | "in_progress" | "completed" | "failed"
+          analyzed_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          document_id?: string
+          user_id?: string
+          overall_risk_score?: number
+          risk_level?: "low" | "medium" | "high"
+          ai_summary?: string | null
+          confidence_score?: number | null
+          clause_summary?: Record<string, unknown> | null
+          status?: "pending" | "in_progress" | "completed" | "failed"
+          analyzed_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      risk_clauses: {
+        Row: {
+          id: string
+          risk_analysis_id: string
+          clause_reference: string
+          clause_title: string
+          clause_type: "liability" | "termination" | "non_compete" | "indemnity" | "financial" | "governance" | "regulatory" | "other" | null
+          risk_level: "low" | "medium" | "high"
+          description: string
+          recommendation: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          risk_analysis_id: string
+          clause_reference: string
+          clause_title: string
+          clause_type?: "liability" | "termination" | "non_compete" | "indemnity" | "financial" | "governance" | "regulatory" | "other" | null
+          risk_level: "low" | "medium" | "high"
+          description: string
+          recommendation?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          risk_analysis_id?: string
+          clause_reference?: string
+          clause_title?: string
+          clause_type?: "liability" | "termination" | "non_compete" | "indemnity" | "financial" | "governance" | "regulatory" | "other" | null
+          risk_level?: "low" | "medium" | "high"
+          description?: string
+          recommendation?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          id: string
+          document_id: string
+          user_id: string
+          report_type: "full_due_diligence" | "executive_summary"
+          file_path: string | null
+          file_size: number | null
+          status: "generating" | "ready" | "error"
+          generated_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          user_id: string
+          report_type: "full_due_diligence" | "executive_summary"
+          file_path?: string | null
+          file_size?: number | null
+          status?: "generating" | "ready" | "error"
+          generated_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          document_id?: string
+          user_id?: string
+          report_type?: "full_due_diligence" | "executive_summary"
+          file_path?: string | null
+          file_size?: number | null
+          status?: "generating" | "ready" | "error"
+          generated_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

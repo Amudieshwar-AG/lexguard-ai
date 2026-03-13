@@ -33,6 +33,7 @@ export default function Register() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
 
   const set = (field: string, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -59,7 +60,7 @@ export default function Register() {
         company: form.company || undefined,
         role: form.role,
       });
-      navigate("/dashboard", { replace: true });
+      setEmailSent(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -81,6 +82,26 @@ export default function Register() {
         <div className="bg-card border border-border rounded-2xl shadow-xl p-8"
           style={{ boxShadow: "var(--shadow-lg)" }}>
 
+          {/* Email sent confirmation screen */}
+          {emailSent ? (
+            <div className="flex flex-col items-center gap-6 py-4 text-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                <Mail size={28} className="text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-display font-bold text-foreground">Check your email</h2>
+                <p className="text-sm text-muted-foreground mt-2">
+                  A confirmation link has been sent to <strong>{form.email}</strong>.<br />
+                  Please verify your email before logging in.
+                </p>
+              </div>
+              <Link to="/login"
+                className="w-full text-center py-2.5 px-4 rounded-xl bg-primary text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+                Back to Login
+              </Link>
+            </div>
+          ) : (
+          <>
           {/* Header */}
           <div className="flex flex-col items-center gap-4 mb-8">
             <TechShieldLogo className="w-14 h-14" />
@@ -274,6 +295,8 @@ export default function Register() {
             <ArrowLeft size={14} />
             Back to Login
           </Link>
+          </>
+          )}
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">

@@ -171,12 +171,20 @@ export function useRiskAnalysis(documentId?: string) {
         .single();
       if (raErr) throw new Error(`Failed to save analysis: ${toErrorMessage(raErr)}`);
 
+      // Helper function to normalize clause_type to match database constraint
+      const normalizeClauseType = (type: string | null | undefined): string => {
+        if (!type) return 'other';
+        const normalized = String(type).toLowerCase().trim().replace(/[-\s]/g, '_');
+        const validTypes = ['liability', 'termination', 'non_compete', 'indemnity', 'financial', 'governance', 'regulatory', 'other'];
+        return validTypes.includes(normalized) ? normalized : 'other';
+      };
+
       // 5. Save flagged clauses + deal-breakers
       const dealBreakers = ((analysis.deal_breakers as any[]) || []).map((db) => ({
         risk_analysis_id: raData.id,
         clause_reference: String(db?.clause ?? 'Deal-Breaker'),
         clause_title: 'Deal-Breaker',
-        clause_type: db?.clause_type ?? null,
+        clause_type: normalizeClauseType(db?.clause_type),
         risk_level: 'high' as const,
         description: String(db?.reason ?? ''),
         recommendation: 'Renegotiate or reject this clause before proceeding.',
@@ -185,7 +193,7 @@ export function useRiskAnalysis(documentId?: string) {
         risk_analysis_id: raData.id,
         clause_reference: String(c?.clause_reference ?? 'Unknown'),
         clause_title: String(c?.clause_title ?? 'Clause'),
-        clause_type: c?.clause_type ?? null,
+        clause_type: normalizeClauseType(c?.clause_type),
         risk_level: (c?.risk_level ?? 'medium') as "low" | "medium" | "high",
         description: String(c?.description ?? ''),
         recommendation: c?.recommendation ?? null,

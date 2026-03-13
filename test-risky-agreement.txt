@@ -1,0 +1,227 @@
+═══════════════════════════════════════════════════════════════════════════════
+SHARE PURCHASE AGREEMENT — TEST DOCUMENT (HIGH RISK)
+═══════════════════════════════════════════════════════════════════════════════
+
+This Share Purchase Agreement ("Agreement") is entered into as of March 1, 2026,
+by and between ACME Ventures LLC ("Buyer") and TechCorp Industries Inc. ("Seller").
+
+WHEREAS, Seller owns 100% of the issued shares of DataFlow Solutions Ltd.;
+NOW THEREFORE, in consideration of the mutual covenants herein, the parties agree:
+
+
+─── ARTICLE 1: PURCHASE AND SALE ───────────────────────────────────────────────
+
+1.1 Sale of Shares
+Seller agrees to sell to Buyer all issued and outstanding shares of DataFlow 
+Solutions Ltd. for a purchase price of $5,000,000 USD.
+
+1.2 Closing Date
+The closing shall occur on April 15, 2026, subject to regulatory approvals.
+
+
+─── ARTICLE 2: REPRESENTATIONS AND WARRANTIES ──────────────────────────────────
+
+2.1 Financial Condition
+Seller represents that the financial statements provided are accurate as of 
+December 31, 2025. However, Seller makes no representation regarding events 
+occurring after that date.
+
+2.2 Material Adverse Change
+If a Material Adverse Change occurs, Buyer may terminate this Agreement. A 
+"Material Adverse Change" includes any change in market conditions, competitive 
+landscape, or general economic downturn.
+
+
+─── ARTICLE 3: LIABILITY AND INDEMNIFICATION ───────────────────────────────────
+
+3.1 Seller Liability — ⚠️ HIGH RISK
+Seller shall be liable for all obligations, debts, liabilities, and claims 
+arising from the Company's operations, whether known or unknown, prior to or 
+after the Closing Date. This includes any environmental liabilities, regulatory 
+violations, intellectual property infringement claims, employee disputes, 
+customer lawsuits, vendor obligations, tax liabilities, and any other claims 
+of any nature whatsoever.
+
+Seller's liability under this section is UNLIMITED and has NO CAP.
+
+3.2 Buyer Indemnification — ⚠️ HIGH RISK
+Buyer shall indemnify Seller against any claims related to post-closing operations, 
+but only to the extent such claims exceed $2,000,000 in the aggregate. Below this 
+threshold, Buyer assumes no responsibility.
+
+3.3 Indemnification Cap — ⚠️ CRITICAL RISK
+Seller's total indemnification obligations under this Agreement shall not exceed 
+$250,000 USD. This cap applies to ALL claims, including fraud, willful misconduct, 
+and gross negligence.
+
+3.4 Survival Period
+All indemnification obligations shall survive for 12 months after Closing, except 
+for tax matters which survive for 18 months.
+
+3.5 Basket and Deductible
+Buyer must absorb the first $150,000 of any indemnifiable losses before making 
+any claim against Seller.
+
+
+─── ARTICLE 4: TERMINATION RIGHTS ──────────────────────────────────────────────
+
+4.1 Termination for Convenience — ⚠️ HIGH RISK
+Either party may terminate this Agreement at any time, for any reason or no reason, 
+by providing 15 days' written notice to the other party.
+
+4.2 Change of Control Termination — ⚠️ CRITICAL RISK
+The Company's three largest customer contracts (representing 68% of annual revenue) 
+contain change-of-control provisions that allow automatic termination upon acquisition. 
+Seller has not obtained waivers from these customers.
+
+Customer A (35% of revenue): Auto-terminates on change of ownership
+Customer B (22% of revenue): Requires consent, which may be withheld for any reason
+Customer C (11% of revenue): May terminate with 30 days notice post-acquisition
+
+4.3 Key Employee Departure
+If any of the Company's five key engineers resign within 90 days of Closing, 
+Buyer may terminate this Agreement and demand full refund of the purchase price.
+
+4.4 No Cure Period
+All termination rights are exercisable immediately without any right to cure. 
+Seller has no opportunity to remedy any breach before termination becomes effective.
+
+
+─── ARTICLE 5: NON-COMPETE AND RESTRICTIVE COVENANTS ───────────────────────────
+
+5.1 Non-Compete — ⚠️ WEAK PROTECTION
+Seller agrees not to engage in any business that competes with the Company for a 
+period of 9 months following Closing.
+
+Geographic Scope: Within the city limits of San Francisco only
+Definition of "Competing Business": Limited to businesses that directly replicate 
+the Company's exact product offering as it exists on the Closing Date
+
+5.2 Non-Solicitation — ⚠️ WEAK PROTECTION  
+Seller shall not solicit the Company's employees for 6 months after Closing. 
+However, this restriction does not apply to:
+  - General job postings on LinkedIn or other public platforms
+  - Employees who contact Seller proactively
+  - Former employees who left the Company before Closing
+
+5.3 Trade Secrets
+Seller shall not disclose the Company's confidential information, except that 
+Seller may share such information with advisors, investors, or other third parties 
+if Seller deems it necessary for legitimate business purposes.
+
+5.4 No Enforcement Mechanism
+In the event of a breach of the non-compete provisions, Buyer's sole remedy is 
+to seek injunctive relief. Seller shall not be liable for monetary damages arising 
+from any competitive activities.
+
+
+─── ARTICLE 6: INTELLECTUAL PROPERTY ──────────────────────────────────────────
+
+6.1 IP Assignment — ⚠️ INCOMPLETE
+Seller assigns to Buyer all intellectual property developed by Company employees 
+during their employment. However, any IP developed by contractors remains the 
+property of such contractors unless separate assignment agreements exist.
+
+Seller has not obtained assignment agreements from 7 of the 12 contractors who 
+contributed to the Company's core technology platform.
+
+6.2 Founder IP
+The Company's co-founder, John Smith, developed the initial version of the software 
+while employed at his previous company, MegaTech Corp. No clearance or license has 
+been obtained from MegaTech Corp regarding this technology.
+
+6.3 Open Source License Violation
+The Company's product incorporates certain GPL-licensed open source components. 
+The Company has not released its source code as required by the GPL, and no legal 
+review of license compliance has been conducted.
+
+
+─── ARTICLE 7: REGULATORY AND COMPLIANCE ───────────────────────────────────────
+
+7.1 GDPR Compliance
+The Company processes personal data of EU residents but has not appointed a Data 
+Protection Officer as required by GDPR. The Company has received 3 data subject access 
+requests in the past year, none of which were responded to within the required 30-day 
+timeframe.
+
+7.2 SOC 2 Audit
+The Company claims to be "SOC 2 compliant" in its marketing materials but has never 
+undergone an actual SOC 2 Type II audit. This representation is being actively used 
+to win enterprise customers.
+
+7.3 California Consumer Privacy Act
+The Company has not implemented a "Do Not Sell My Information" link on its website 
+as required by CCPA, despite collecting California resident data.
+
+
+─── ARTICLE 8: FINANCIAL OBLIGATIONS ──────────────────────────────────────────
+
+8.1 Earn-Out Provision
+$2,000,000 of the purchase price is contingent on the Company achieving $8,000,000 
+in revenue during the 12 months following Closing. Revenue calculations shall be 
+determined by Buyer in its sole discretion.
+
+8.2 Escrow
+$500,000 of the purchase price shall be held in escrow for 12 months to secure 
+Seller's indemnification obligations. All escrow funds not claimed by Buyer shall 
+be released to Seller.
+
+8.3 Payment Terms
+The purchase price shall be paid as follows:
+  - $1,000,000 at Closing
+  - $1,500,000 in 6 equal monthly installments
+  - $500,000 in escrow
+  - $2,000,000 earn-out (contingent)
+
+
+─── ARTICLE 9: MISCELLANEOUS ───────────────────────────────────────────────────
+
+9.1 Governing Law
+This Agreement shall be governed by the laws of the Cayman Islands.
+
+9.2 Dispute Resolution
+All disputes shall be resolved through binding arbitration in Grand Cayman. 
+Each party shall bear its own legal costs regardless of outcome.
+
+9.3 Entire Agreement
+This Agreement constitutes the entire agreement between the parties and supersedes 
+all prior negotiations, understandings, and agreements, whether written or oral.
+
+9.4 Amendment
+This Agreement may be amended only by written agreement signed by both parties.
+
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first 
+written above.
+
+SELLER:                                    BUYER:
+TechCorp Industries Inc.                   ACME Ventures LLC
+
+_______________________________           _______________________________
+Signature                                  Signature
+
+John Smith, CEO                           Maria Rodriguez, Managing Partner
+Date: March 1, 2026                       Date: March 1, 2026
+
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF AGREEMENT
+═══════════════════════════════════════════════════════════════════════════════
+
+RISK SUMMARY (For Testing):
+─────────────────────────────
+This document intentionally contains the following HIGH-RISK clauses:
+
+1. LIABILITY: Unlimited seller liability, uncapped environmental/IP exposure
+2. INDEMNITY: Cap only $250k (5% of deal value), high basket ($150k), short survival
+3. TERMINATION: 15-day termination for convenience, change-of-control auto-terminate
+4. NON-COMPETE: Only 9 months, narrow geographic scope, weak enforcement
+5. IP: Incomplete contractor assignments, founder IP from prior employer
+6. REGULATORY: GDPR violations, false SOC 2 claims, CCPA non-compliance
+7. FINANCIAL: Buyer-controlled earn-out, deal-breaker MAC clause
+
+Expected AI Analysis Output:
+- Overall Risk Score: 85-95 (HIGH)
+- Flagged Clauses: 12-15
+- Deal Breakers: 3-5
+- Clause Summary: All 4 types found with HIGH risk levels

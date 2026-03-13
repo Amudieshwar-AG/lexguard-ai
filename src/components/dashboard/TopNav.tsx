@@ -1,4 +1,4 @@
-import { Bell, Search, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -34,29 +34,11 @@ export function TopNav({ activeSection }: TopNavProps) {
           <h1 className="text-base font-display font-semibold text-foreground leading-tight">
             {sectionTitles[activeSection] || "Dashboard"}
           </h1>
-          <p className="text-xs text-muted-foreground">Powered by Google Gemini · Real-time AI Analysis</p>
         </div>
       </div>
 
       {/* Right: search + actions */}
       <div className="flex items-center gap-3">
-        {/* Search */}
-        <div className="hidden md:flex items-center gap-2 bg-muted rounded-lg px-3 py-2 text-sm text-muted-foreground w-56">
-          <Search size={14} />
-          <span>Search documents...</span>
-        </div>
-
-        {/* Notification */}
-        <button className="relative w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-secondary transition-colors">
-          <Bell size={16} className="text-muted-foreground" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger" />
-        </button>
-
-        {/* Status badge */}
-        <div className="hidden sm:flex items-center gap-2 bg-success/10 border border-success/20 px-3 py-1.5 rounded-lg">
-          <span className="w-2 h-2 rounded-full bg-success animate-pulse-dot" />
-          <span className="text-xs font-medium text-success">AI Online</span>
-        </div>
 
         {/* User avatar */}
         <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">

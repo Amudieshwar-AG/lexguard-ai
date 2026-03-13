@@ -68,42 +68,41 @@ export function useDocuments() {
     }
   }
 
-  async function uploadDocument(file: File): Promise<Document | null> {
+  async function uploadDocument(file: File): Promise<Document> {
     if (!user?.id) throw new Error('User not authenticated');
 
-    try {
-      // Upload file to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+    // Upload file to Supabase Storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file);
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+    if (uploadError) throw uploadError;
 
-      // Create document record
-      const { data, error: insertError } = await supabase
-        .from('documents')
-        .insert({
-          user_id: user.id,
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-          file_path: filePath,
-          status: 'processing',
-        })
-        .select()
-        .single();
+    // Create document record
+    const { data, error: insertError } = await supabase
+      .from('documents')
+      .insert({
+        user_id: user.id,
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+        file_path: filePath,
+        status: 'processing',
+      })
+      .select()
+      .single();
 
-      if (insertError) throw insertError;
-
-      return data;
-    } catch (err) {
-      console.error('Upload error:', err);
-      return null;
+    if (insertError) {
+      // Clean up the stored file if DB insert failed
+      await supabase.storage.from('documents').remove([filePath]);
+      throw insertError;
     }
+
+    return data;
   }
 
   async function deleteDocument(id: string) {
